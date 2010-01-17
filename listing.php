@@ -5,19 +5,21 @@ require('config/settings.php');
 
 if ($_GET) {
 	/* Build query */
-	$whereClause = __buildWhereClause($_GET);
+	#$whereClause = __buildWhereClause($_GET);
 	
-	$data = array('where'=>$whereClause,
-				'ListingFields'=>LISTING_FIELDS,
+	$data = array('ListingFields'=>LISTING_FIELDS,
 				'sort'=>LISTING_ORDER_BY,
-				'token'=>SF_SECURITY_TOKEN);
+				'token'=>SF_SECURITY_TOKEN,
+				'maximum_bedrooms'=>MAXIMUM_BEDROOMS);
+	
+	$data += $_GET;
 
 	$query = SALESFORCE_URL . LISTING_PAGE . '?' . http_build_query($data);
 	
 	/* Connecting Salesforce - Load Data */
 	$xml = simplexml_load_file($query);
 	
-	$images = simplexml_load_file(SALESFORCE_URL . IMAGE_PAGE . '?' . http_build_query(array('token'=>SF_SECURITY_TOKEN,'inventoryids'=>__getInventoryIdsAsString($xml))));
+	$images = simplexml_load_file(SALESFORCE_URL . IMAGE_PAGE . '?' . http_build_query($data) );
 	
 	/* Matching images with listing */
 	$xml = __matchImages($xml,$images);
@@ -38,12 +40,26 @@ if ($_GET) {
 function __displayTable($xml) {
 	include('templates/header.php');
 	?>
+	<script language="JavaScript">
+	function setVisibility(id, visibility) {
+		document.getElementById(id).style.display = visibility;
+	}
+	</script>
+	<input type="button" name="type" value="Show XML DEBUG" onclick="setVisibility('debug', 'block');";>
+	<input type="button" name="type" value="Hide XML DEBUG" onclick="setVisibility('debug', 'none');";>
+	<div id="debug" style="display: none; border:2px solid red">
+		<pre>DEBUG:<?php print_r($xml); ?></pre>
+	</div>
 	<h1>Property Listing</h1>
-	<?php if ((int)$xml->SelectSize->Size > (int)$xml->SelectSize->Limit): ?>
-		<div style="padding: 10px; width: 702px; height: 48px; background-color: #ffe993;">
-			<p style="padding:0;margin:0">Your search has too many properties as a result.<br/>
-				Only <b><?php print($xml->SelectSize->Limit); ?></b> are displayed. Please define your search details more precisely.<br/>
-				<a href="javascript:history.back()">New search...</a></p>
+	<?php $number_of_pages = ceil((float)$xml->Pagination->NumberOfInventories / (float)$xml->Pagination->InventoriesPerPage) ?>
+	<?php unset($_GET['page']); ?>
+	<?php if ($number_of_pages > 1): ?>
+		<div id="page_nav">
+			<ul>
+		<?php for ($i = 1; $i <= $number_of_pages; $i++):?>
+				<li><a href="<?php print($_SERVER['PHP_SELF'] . '?' . http_build_query($_GET) . '&page=' . $i); ?>"><?php print($i); ?></a></li>
+		<?php endfor; ?>
+			<ul>
 		</div>
 	<?php endif; ?>
 	<?php if (count($xml->InventoryList->InventoryItem__c) > 0): ?>
@@ -56,14 +72,14 @@ function __displayTable($xml) {
 						<img src="<?php print($inventoryItem->InventoryImage__c->ThumbnailUrl__c); ?>" alt="<?php print($inventoryItem->InventoryImage__c->ExternalId__c); ?>" />
 					</div>
 					<div class="text">
-						<h2><?php print($inventoryItem->pb__UnitBedrooms__c); ?> bedroom <?php print(strtolower($inventoryItem->pb__UnitType__c)); ?></h2>
-						<h3><?php print($inventoryItem->pb__PurchaseListPrice__c); ?> <?php print($inventoryItem->CurrencyIsoCode); ?></h3>
+						<h2><?php print($inventoryItem->UnitBedrooms__c); ?> bedroom <?php print(strtolower($inventoryItem->UnitType__c)); ?></h2>
+						<h3><?php echo number_format((float)$inventoryItem->PurchaseListPrice__c,2,'.',',') ?> <?php print($inventoryItem->CurrencyIsoCode); ?></h3>
 						<p><?php
 						$desc_lenght = 255;
-						if (strlen($inventoryItem->pb__ItemDescription__c) >= $desc_lenght) {
-							print(substr($inventoryItem->pb__ItemDescription__c,0,$desc_lenght) . " (...)");
+						if (strlen($inventoryItem->ItemDescription__c) >= $desc_lenght) {
+							print(substr($inventoryItem->ItemDescription__c,0,$desc_lenght) . " (...)");
 						} else {
-							print($inventoryItem->pb__ItemDescription__c);
+							print($inventoryItem->ItemDescription__c);
 						}
 						?></p>
 						<a href="detail.php?id=<?php print($inventoryItem->Id); ?>" target="_top">Details &gt;&gt;</a>
@@ -74,7 +90,11 @@ function __displayTable($xml) {
 		<?php endforeach; ?>
 	</table>
 	<?php else: ?>
-	<p>Sorry, your search resulted in no results.</p>
+		<?php if ($xml->Error): ?>
+			<p>Error message: <span style="color: red;"><?php print($xml->Error); ?></span></p>
+		<?php else: ?>
+			<p>Sorry, your search resulted in no results.</p>
+		<?php endif; ?>
 	<?php endif; ?>
 	
 	<?php
@@ -104,91 +124,6 @@ function __matchImages($xml, $images) {
 		}
 	}
 	return $xml;
-}
-
-/**
- * Method returns all Inventory Ids as comma separated string
- * 
- * @param object $xml XML Object with properties (Propertybase data)
- *
- * @return string Comma separated string with all inventory ids
- */
-function __getInventoryIdsAsString($xml) {
-	$inventoryids = '';
-	
-	/* Loop through all InventoryItems */
-	foreach ($xml->InventoryList->InventoryItem__c as $inventory) {
-		$inventoryids .= '\''. (string)$inventory->Id . '\',';
-	}
-	
-	return substr($inventoryids,0,-1);	
-}
-
-/**
- * Method used to build query used in where condition according to given search criteria
- *
- * @param array $searchCriteria Search criteria
- *
- * @return string Query used in where condition according to given search criteria
- */
-function __buildWhereClause($searchCriteria) {
-
-	// Build query used in where condition according to given search criteria
-    $whereQuery = 'pb__PurchaseListPrice__c >= ' . $searchCriteria['price_from'];
-
-    // Consider 'price to' if it's set
-    if (isset($searchCriteria['price_to'])) {
-        $whereQuery .= ' AND pb__PurchaseListPrice__c <= ' . $searchCriteria['price_to'];
-    }
-
-	if ('any' != $searchCriteria['minimum_bedrooms']) {
-		$bedroomQuery = ' AND pb__UnitBedrooms__c IN (\'';
-		for ($bedroom = (int)$searchCriteria['minimum_bedrooms']; $bedroom <= MAXIMUM_BEDROOMS; $bedroom++) {
-			$bedroomQuery.= $bedroom . '\', \'';
-		}
-		$whereQuery .= substr($bedroomQuery, 0, -4) . '\')';
-	}
-
-    // Build query for type
-    if ('any' != $searchCriteria['type']) {
-        $whereQuery .= ' AND pb__UnitType__c = \'' . $searchCriteria['type'] .'\'';
-    }
-
-	// Build query for location
-    if ('any' != $searchCriteria['location']) {
-        $whereQuery .= ' AND pb__Location__c = \'' . $searchCriteria['location'] .'\'';
-    }
-
-	// Initialize conditions
-    $whereQuery .= ' AND ';
-
-	// Search for Sale & Lease
-    if (isset($searchCriteria['is_for_sale']) && isset($searchCriteria['is_for_lease'])) {
-		$whereQuery .= '(pb__IsForSale__c = true OR pb__IsForLease__c = true)';
-	} else if (empty($searchCriteria['is_for_sale']) && empty($searchCriteria['is_for_lease'])){
-		$whereQuery .= 'pb__IsForSale__c = false AND pb__IsForLease__c = false';
-	}
-
-	// Search for Sale only
-	if (isset($searchCriteria['is_for_sale']) && empty($searchCriteria['is_for_lease'])) {
-		$whereQuery .= 'pb__IsForSale__c = true';
-	}
-
-	// Search for Lease only
-	if (isset($searchCriteria['is_for_lease']) && empty($searchCriteria['is_for_sale'])) {
-		$whereQuery .= 'pb__IsForLease__c = true';
-	}
-
-	if (isset($searchCriteria['reference_number']) && $searchCriteria['reference_number'] != '') {
-		$whereQuery = 'Name LIKE \'%'. $searchCriteria['reference_number'] .'%\'';
-	}
-	
-	// List only available units
-	// DEBUG: Add 'AND pb__IsListed__c = true '
-	$whereQuery .= ' AND pb__IsAvailable__c = true';
-	
-	// Return built query to use in where condition
-    return $whereQuery;
 }
 
 ?>

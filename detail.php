@@ -14,9 +14,7 @@ if ($_GET) {
 	/* Connecting Salesforce - Load Data */
 	$xml = simplexml_load_file($query);
 	
-	$inventoryid = '\'' . (string)$xml->Id . '\'';
-	
-	$images = simplexml_load_file(SALESFORCE_URL . IMAGE_PAGE . '?' . http_build_query(array('token'=>SF_SECURITY_TOKEN,'inventoryids'=>$inventoryid)));
+	$images = simplexml_load_file(SALESFORCE_URL . IMAGE_PAGE . '?' . http_build_query(array('token'=>SF_SECURITY_TOKEN,'id'=>(string)$xml->Id)));
 	
 	/* Matching images with listing */
 	$xml = __matchImagesForDetailPage($xml,$images);
@@ -50,7 +48,7 @@ function __displayProperty($xml) {
 		<div id="body">
 			<div class="left">
 				<img src="<?php print($xml->InventoryImage__c[0]->MidResUrl__c); ?>" width="400" alt="<?php print($xml->InventoryImage__c[0]->ExternalId__c); ?>" />
-				<p><?php print($xml->pb__ItemName__c); ?></p>
+				<p><?php print($xml->ItemName__c); ?></p>
 				<input class="formButton" name="back" id="back" value="Back to results" onclick="history.go(-1);" type="submit">
 				<input class="formButton" name="new_search" id="new_search" value="New search" onclick="document.location='search.php'" type="submit">
 			</div>
@@ -72,16 +70,16 @@ function __displayProperty($xml) {
 				<div class="details">
 					<h3>Details</h3>
 					<ul>
-						<li>Price: <?php print($xml->pb__PurchaseListPrice__c); ?> <?php print($xml->CurrencyIsoCode); ?></li>
-						<li>Bedrooms: <?php print($xml->pb__UnitBedrooms__c); ?></li>
-						<li>Type: <?php print($xml->pb__UnitType__c); ?></li>
+						<li>Price: <?php echo number_format((float)$xml->PurchaseListPrice__c,2,'.',',') ?> <?php print($xml->CurrencyIsoCode); ?></li>
+						<li>Bedrooms: <?php print($xml->UnitBedrooms__c); ?></li>
+						<li>Type: <?php print($xml->UnitType__c); ?></li>
 						<li>Reference Number: <?php print($xml->Name); ?></li>
-						<li>Total Area (sqf): <?php print($xml->pb__TotalAreaSqf__c); ?></li>
+						<li>Total Area (sqf): <?php print($xml->TotalAreaSqf__c); ?></li>
 					</ul>
 				</div>
 				<div class="details">
 					<h3>Description</h3>
-					<p><?php print($xml->pb__ItemDescription__c); ?></p>
+					<p><?php print($xml->ItemDescription__c); ?></p>
 				</div>
 			</div>
 		</div>
