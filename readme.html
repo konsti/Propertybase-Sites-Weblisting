@@ -1,0 +1,56 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<title>Propertybase - XML Webservices on Sites &rsaquo; ReadMe</title>
+	<link rel="stylesheet" href="css/install.css" type="text/css" />
+</head>
+<body>
+<h1 id="logo" style="text-align: center">
+	<img alt="Propertybase" src="images/propertybase_logo.png" />
+	<br /> <span style="font-weight: bold; margin-bottom: 1px;">XML Webservices on Sites</span>
+	<br /> <span style="font-size:.7em; margin-top: 1px;">Version 1.5</span>
+</h1>
+
+<h1>Installation</h1>
+<ol>
+	<li>Unzip the package in an empty directory.</li>
+	<li>Open up <code>config/settings.php</code> with a text editor like WordPad or similar and fill in your salesforce URL and your security token</li>
+	<li>Save the file.</li>
+	<li>Upload everything to your webserver.</li>
+	<li>You can open <code>search.php</code> and enjoy your new weblisting, or create new accounts with <code>lead_form.html</code>.</li>
+</ol>
+
+<h1>Customization</h1>
+<ul style="padding-left: 0px; list-style-position:inside;">
+	<h2 style="margin-top: 0px">Search form (<code>search.php</code>):</h2>
+	<li>Edit the <code>__displaySearchForm</code> function, or replace it with a template engine to change the search form.</li>
+	<li>Adjust the <code>MAXIMUM_BEDROOMS</code> constant in <code>config/settings.php</code> if you change the bedrooms search field.</li>
+	<h2>Listing Result (<code>listing.php</code>):</h2>
+	<li>Fields available in the salesforce response (<code>$xml</code>): Adjust the <code>LISTING_FIELDS</code> constant in <code>config/settings.php</code>.</li>
+	<li>Edit the sort order: Adjust <code>LISTING_ORDER_BY</const> constant in <code>config/settings.php</code>.
+	<li>Edit the <code>__displayTable</code> function, or replace it with a template engine to adjust the listing layout and design.</li>
+	<h2>Property Detail View (<code>detail.php</code>):</h2>
+	<li>Fields available in the salesforce response (<code>$xml</code>): Adjust the <code>DETAIL_FIELDS</code> constant in <code>config/settings.php</code>.</li>
+	<li>Edit the <code>__displayProperty</code> function, or replace it with a template engine to adjust the listing layout and design.</li>
+</ul>
+
+<h1>System Recommendations</h1>
+<ul>
+	<li>PHP version <strong>5.2</strong> or higher.</li>
+	<li>PHP <strong>SimpleXML</strong> extension.</li>
+	<li>PHP setting <code>allow_url_fopen</code></li>
+</ul>
+
+<h1> Final notes</h1>
+<ul>
+	<li>If you have any questions that aren't addressed in this document, please take advantage of leancrm support: <a href="mailto:support@leancrm.com">support@leancrm.com</a></li>
+</ul>
+
+<h1>Copyright</h1>
+<p>Propertybase XML Webservices on Sites is released under the <abbr title="GNU Public License">GPL</abbr> (see <a href="license.txt">license.txt</a>).</p>
+<p>Lightwindow v2.0 is released under the terms of an MIT-style license by Kevin P Miller | <a href="http://www.stickmanlabs.com/lightwindow/" target="_blank">http://www.stickmanlabs.com/lightwindow/</a></p>
+<p>Design and Layout inspired by Wordpress <a href="http://www.wordpress.org" target="_blank">http://www.wordpress.org</a></p>
+
+</body>
+</html>
